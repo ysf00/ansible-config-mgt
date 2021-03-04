@@ -28,6 +28,11 @@
       with_items:
           - nfs-common
           - nfs-kernel-server
+    - name: Ensure httpd is running
+      service:
+        name: nfs-kernel-server
+        state: started
+        enabled: true
 
 ## WEBSERVERS
 - hosts: webservers
