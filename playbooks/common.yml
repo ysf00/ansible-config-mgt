@@ -50,6 +50,7 @@
       with_items:
         - php
         - httpd
+        - mysql
 
     - name: Ensure httpd is running
       service:
