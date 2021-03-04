@@ -123,53 +123,28 @@
 - hosts: db
   become: true
   tasks:
-
-    - name: Get the facts for default pip, pip2 and pip3.6
-      pip_package_info:
-    
-    - name: Install pip
-      apt:
-        name: pip
-        state: latest
-
-    - name: Install dependencies
-      apt:
-        name: "{{ item }}"
-        state: latest
+    - name: Update DNF Package repository
+      dnf:
         update_cache: yes
-      with_items:
-        - python3-pip
-        - python-setuptools
-        - python3-dev
-        - build-essential
-        - python3-mysqldb
-        - libmysqlclient-dev
 
     - name: Install MySql
-      apt:
+      dnf:
         name: "{{ item }}"
         state: present
         update_cache: yes
       with_items:
-        - mysql-common
         - mysql-server
-        - mysql-client    
+        - mysql 
 
-    - name: Create database user
-      mysql_user: 
-        name: ade
-        password: "ade12345"
-        priv: '*.*:ALL'
-        state: present
-        
-    - name: Create database tooling
-      mysql_db:
-        name: "tooling"
-        state: present
-    
     - name: Ensure mysql is running
       service:
-        name: mysql
+        name: mysqld
         state: started
         enabled: true
+        
+    - name: Install python3-PyMySQL librar
+      dnf:
+        name: python3-PyMySQL
+        state: present
+
 ...
