@@ -10,7 +10,7 @@
 172.31.0.16 ansible_user=ubuntu
     
 [jenkins]
-172.31.0.17 ansible_user=ubuntu
+172.31.0.17 ansible_user=ec2-user
 
 [lb]
 172.31.0.18 ansible_user=ubuntu
