@@ -124,13 +124,13 @@
   become: true
   tasks:
 
-#    - name: Get the facts for default pip, pip2 and pip3.6
-#      pip_package_info:
+    - name: Get the facts for default pip, pip2 and pip3.6
+      pip_package_info:
     
-#    - name: Install pip
-#      apt:
-#        name: pip
-#        state: latest
+    - name: Install pip
+      apt:
+        name: pip
+        state: latest
 
     - name: Install dependencies
       apt:
