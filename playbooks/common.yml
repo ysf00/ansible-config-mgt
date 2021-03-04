@@ -1,0 +1,96 @@
+---
+- hosts: nfs
+  become: true
+  tasks:
+    - name: Create a new xvdb primary partition
+      parted:
+        device: /dev/xvdb
+        number: 1
+        state: present
+
+    - name: Create a new xvdc primary partition
+      parted:
+        device: /dev/xvdc
+        number: 1
+        state: present
+
+    - name: Create a new xvdd primary partition
+      parted:
+        device: /dev/xvdd
+        number: 1
+        state: present
+
+    - name: Create LVM volume group
+      lvg:
+        vg: nfs-vg
+        pvs: /dev/xvdb1,/dev/xvdc1,/dev/xvdd1
+
+    - name: Create a logical volume
+      lvol:
+        vg: nfs-vg
+        lv: lv-apps
+        size: 8g
+    - name: Create a logical volume
+      lvol:
+        vg: nfs-vg
+        lv: lv-logs
+        size: 8g
+    - name: Create a logical volume
+      lvol:
+        vg: nfs-vg
+        lv: lv-opt
+        size: 7.9g
+
+    - name: Format the lv-apps disk
+      filesystem:
+        fstype: xfs
+        dev: /dev/nfs-vg/lv-apps
+    - name: Format the lv-logs disk
+      filesystem:
+        fstype: xfs
+        dev: /dev/nfs-vg/lv-logs
+    - name: Format the lv-opt disk
+      filesystem:
+        fstype: xfs
+        dev: /dev/nfs-vg/lv-opt
+
+    - name: Create Directory
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: nobody
+        group: nogroup
+        mode: '0777'
+        recurse: yes
+      with_items:
+        - '/mnt/apps'
+        - '/mnt/logs'
+        - '/mnt/opt'
+
+    - name: Mount partition
+      mount:
+        path: /mnt/apps
+        src: /dev/nfs-vg/lv-apps
+        fstype: nfs
+        state: mounted
+    - name: Mount partition
+      mount:
+        path: /mnt/logs
+        src: /dev/nfs-vg/lv-logs
+        fstype: nfs
+        state: mounted
+    - name: Mount partition
+      mount:
+        path: /mnt/opt
+        src: /dev/nfs-vg/lv-opt
+        fstype: nfs
+        state: mounted
+
+    - name: Ensure NFS utilities are installed
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      with_items:
+          - nfs-common
+          - nfs-kernel-server
