@@ -1,0 +1,156 @@
+---
+## NFS SERVER
+- hosts: nfs
+  become: true
+  tasks:
+    - name: Create a new xvdb primary partition
+      parted:
+        device: /dev/xvdb
+        number: 1
+        state: present
+
+    - name: Create a new xvdc primary partition
+      parted:
+        device: /dev/xvdc
+        number: 1
+        state: present
+
+    - name: Create a new xvdd primary partition
+      parted:
+        device: /dev/xvdd
+        number: 1
+        state: present
+    - name: Ensure NFS utilities are installed
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      with_items:
+          - nfs-common
+          - nfs-kernel-server
+    - name: Ensure httpd is running
+      service:
+        name: nfs-kernel-server
+        state: started
+        enabled: true
+
+## WEBSERVERS
+- hosts: webservers
+  become: true
+  tasks:
+    - name: Install nfs-client
+      yum:
+        name: nfs-utils
+        state: latest
+    
+    - name: Create Directory
+      file:
+        path: /var/www
+        state: directory
+        mode: 0755
+    - name: Install apache httpd
+      yum:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - php
+        - httpd
+        - mysql
+
+    - name: Ensure httpd is running
+      service:
+        name: httpd
+        state: started
+        enabled: true
+
+## Jenkins server
+- hosts: jenkins
+  become: true
+  tasks:
+    - name: install wget
+      yum:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      with_items:
+        -  wget
+        -  java-1.8.0-openjdk
+    - name: download jenkins.repo
+      get_url:
+        url: http://pkg.jenkins-ci.org/redhat-stable/jenkins.repo
+        dest: /etc/yum.repos.d/jenkins.repo
+    - name: import jenkins key
+      rpm_key:
+        state: present
+        key: https://jenkins-ci.org/redhat/jenkins-ci.org.key
+    - name: Install jenkins
+      yum:
+        name: jenkins
+        state: present
+    - name: start jenkins
+      service:
+        name: jenkins
+        state: started
+    - name: enable jenkins
+      service:
+        name: jenkins
+        enabled: yes
+    - name: sleep for 30 seconds and continue with play
+      wait_for: timeout=30
+      delegate_to: localhost
+    
+    - name: init password jenkin
+      shell: cat /var/lib/jenkins/secrets/initialAdminPassword
+      changed_when: false
+      register: result
+
+    - name: print init password jenkins
+      debug:
+        var: result.stdout
+
+## LOADBALANCER
+- name: Install Apache
+  hosts: lb
+  become: true
+
+  tasks:
+  - name: Install Apache.
+    apt:
+       name: apache2
+       state: present
+
+  - name: Make sure Apache is started now and on boot
+    service:
+      name: apache2
+      state: started
+      enabled: true
+
+## Database server
+- hosts: db
+  become: true
+  tasks:
+    - name: Update DNF Package repository
+      dnf:
+        update_cache: yes
+
+    - name: Install MySql
+      dnf:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      with_items:
+        - mysql-server
+        - mysql 
+
+    - name: Ensure mysql is running
+      service:
+        name: mysqld
+        state: started
+        enabled: true
+        
+    - name: Install python3-PyMySQL librar
+      dnf:
+        name: python3-PyMySQL
+        state: present
+
+...
